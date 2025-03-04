@@ -1,0 +1,102 @@
+\documentclass[letterpaper]{article}
+% Replace 'aaai24' below with the correct style filename from the AAAI 2024 kit if needed,
+% e.g., \usepackage{aaai24} if you have the style file in the same folder.
+
+% \usepackage{aaai24}        % The 2024 AAAI style (replace with correct file name)
+\usepackage{times}         % Times New Roman font (required)
+\usepackage{helvet}        % Helvetica font (required)
+\usepackage{courier}       % Courier font (required)
+\usepackage[hyphens]{url}  % For breaking URLs
+\usepackage{graphicx}      % For figures
+\usepackage{amsmath,amssymb} % For math symbols
+\usepackage{booktabs}      % For nicer tables
+\usepackage{caption}       % For subfigures if needed
+
+% If you use natbib for references, load it here; otherwise, rely on aaai bibliography style.
+%\usepackage{natbib}
+
+% Title and author info
+\title{Project 1 Report: CIFAR-10 Classification with Custom ResNet}
+\author{
+    % Authors
+    Your Name\textsuperscript{\rm 1},
+    Collaborator A\textsuperscript{\rm 2},
+    Collaborator B\textsuperscript{\rm 2}
+}
+% \affiliations{
+%     \textsuperscript{\rm 1}Department or Program, University \\
+%     \textsuperscript{\rm 2}Department or Program, University \\
+%     email@domain.com
+% }
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+% A short summary (3-4 sentences) describing your approach, 
+% key methods, and your final accuracy results or key findings.
+This project addresses the CIFAR-10 image classification challenge using a custom ResNet architecture under the 5-million-parameter constraint. We propose a [brief description of approach], achieving [X%] test accuracy. This report summarizes our methodology, experimental results, and lessons learned.
+\end{abstract}
+
+\section{Introduction}
+% Provide a concise overview of the project goals and problem setup.
+% Summarize the dataset, and the significance of ResNet for image classification.
+The CIFAR-10 dataset is a standard benchmark for image classification, consisting of 60K images spread across 10 classes. We aim to design a custom ResNet architecture with fewer than 5 million parameters, trained from scratch to achieve high accuracy on this dataset.
+
+\section{Methodology}
+% Describe your approach in detail:
+% - Data augmentation
+% - Model architecture (layer sizes, parameter count)
+% - Training procedures, hyperparameters (learning rate, optimizer, epochs)
+% - Implementation details
+
+\subsection{Data Preprocessing and Augmentation}
+We use standard data normalization, random cropping, and horizontal flipping to increase effective training data size.
+
+\subsection{Model Architecture}
+Our proposed network modifies the standard ResNet block to reduce parameter count while maintaining representational power. The final layer configuration is shown in Table~\ref{tab:model-params}.
+
+\subsection{Training Configuration}
+We train using stochastic gradient descent (SGD) with momentum, a batch size of 128, and an initial learning rate of 0.1 with a cosine annealing scheduler.
+
+\begin{table}[ht]
+\centering
+\caption{Key Architecture Details and Parameter Counts}
+\label{tab:model-params}
+\begin{tabular}{lcc}
+\toprule
+Layer & Output Size & \# Params \\
+\midrule
+Conv1 & $32 \times 32$ & XXX \\
+ResBlock1 & $16 \times 16$ & XXX \\
+ResBlock2 & $8 \times 8$   & XXX \\
+\ldots & \ldots & \ldots \\
+FC & 10 & XXX \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Experiments and Results}
+% Present results, training curves, final test accuracy, etc.
+% We trained for 50 epochs. Figure~\ref{fig:train_curve} shows the training and validation accuracy curves. Our final model achieves XX\% accuracy on the held-out test set.
+
+\subsection{Ablation Studies (Optional)}
+% We compare different hyperparameter choices (e.g., dropout, data augmentation) in Table~\ref{tab:ablation}.
+
+\section{Discussion}
+% Reflect on the major challenges faced, what worked well, 
+% which design decisions most contributed to improved accuracy, etc.
+Our experiments show that data augmentation and a well-tuned learning rate schedule are critical to achieving high accuracy within the parameter limit. We found that deeper networks risk exceeding 5 million parameters, while shallower networks underfit.
+
+\section{Conclusion}
+% Summarize findings, discuss future work, etc.
+We demonstrated a custom ResNet for CIFAR-10 that respects the 5-million-parameter cap while maintaining competitive accuracy. Future work could explore novel regularization strategies or advanced optimization techniques.
+
+\section{References}
+% Use either the AAAI bibliography style or natbib (if allowed).
+% Example of AAAI bibliography:
+\bibliographystyle{aaai24}
+\bibliography{references}
+
+\end{document}
