@@ -1,5 +1,6 @@
 /deepl
 # LaTeX intermediate and output files
+*.pdf
 *.aux
 *.bbl
 *.blg
