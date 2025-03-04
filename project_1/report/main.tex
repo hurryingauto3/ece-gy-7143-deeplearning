@@ -2,7 +2,7 @@
 % Replace 'aaai24' below with the correct style filename from the AAAI 2024 kit if needed,
 % e.g., \usepackage{aaai24} if you have the style file in the same folder.
 
-% \usepackage{aaai24}        % The 2024 AAAI style (replace with correct file name)
+\usepackage{aaai24}        % The 2024 AAAI style (replace with correct file name)
 \usepackage{times}         % Times New Roman font (required)
 \usepackage{helvet}        % Helvetica font (required)
 \usepackage{courier}       % Courier font (required)
@@ -79,7 +79,7 @@ FC & 10 & XXX \\
 
 \section{Experiments and Results}
 % Present results, training curves, final test accuracy, etc.
-% We trained for 50 epochs. Figure~\ref{fig:train_curve} shows the training and validation accuracy curves. Our final model achieves XX\% accuracy on the held-out test set.
+We trained for 50 epochs. Figure~\ref{fig:train_curve} shows the training and validation accuracy curves. Our final model achieves XX\% accuracy on the held-out test set \cite{author2024}.
 
 \subsection{Ablation Studies (Optional)}
 % We compare different hyperparameter choices (e.g., dropout, data augmentation) in Table~\ref{tab:ablation}.
@@ -91,12 +91,14 @@ Our experiments show that data augmentation and a well-tuned learning rate sched
 
 \section{Conclusion}
 % Summarize findings, discuss future work, etc.
-We demonstrated a custom ResNet for CIFAR-10 that respects the 5-million-parameter cap while maintaining competitive accuracy. Future work could explore novel regularization strategies or advanced optimization techniques.
+We demonstrated a custom ResNet for CIFAR-10 that respects the 5-million-parameter cap while maintaining competitive accuracy. Future work could explore novel regularization strategies or advanced optimization techniques. Thanks for your time!
 
 \section{References}
 % Use either the AAAI bibliography style or natbib (if allowed).
 % Example of AAAI bibliography:
 \bibliographystyle{aaai24}
 \bibliography{references}
+
+
 
 \end{document}
