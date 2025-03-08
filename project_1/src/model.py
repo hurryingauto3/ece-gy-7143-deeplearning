@@ -156,7 +156,6 @@ testloader = DataLoader(
 # Model initialization
 model = ResNet(ResidualBlock, [2, 2, 2, 2]).to(args.device)
 
-
 # Optimizer and Scheduler
 optimizer_dict = {
     "SGD": optim.SGD(
@@ -210,8 +209,3 @@ for epoch in range(1, args.epochs + 1):
     accuracy = 100.0 * correct / total
     print(f"Epoch {epoch}, Accuracy: {accuracy:.2f}%, Loss: {total_loss:.2f}")
 
-# Save Model
-torch.save(
-    model.state_dict(), f'{datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.pth'
-)
-print("Model saved as 'resnet_model.pth'")
