@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torchsummary import summary
 
-from model_ import ResNet, ResidualBlock, train
+from project_1.src.model_training import ResNet, ResidualBlock, train
 from data import CIFAR10DataModule, display_all_data, generate_submission
 
 

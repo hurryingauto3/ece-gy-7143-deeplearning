@@ -15,11 +15,42 @@ from torchvision import datasets, transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 
+class CIFARTransforms:
+    def __init__(self, mode):
+        self.mode = mode
+        if mode == "basic":
+            self.train_transform = transforms.Compose([
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+            self.test_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+        elif mode == "advanced":
+            self.train_transform = transforms.Compose([
+                transforms.RandomCrop(32, padding=4),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandAugment(num_ops=2, magnitude=9),  # Diverse randomized policies
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+                transforms.RandomErasing(p=0.5, scale=(0.02, 0.2), ratio=(0.3, 3.3)),  # Occlude parts of image
+            ])
+            self.test_transform = transforms.Compose([
+                transforms.ToTensor(),
+                transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
+            ])
+        else:
+            raise ValueError("Invalid mode. Choose 'basic' or 'advanced'.")
+
 
 class CIFARTestDataset(Dataset):
     """
     Custom dataset for CIFAR-10 test images.
-    
+
     Args:
         pkl_file (str): Path to the pickle file containing the test data.
         transform (callable, optional): Optional transform to be applied on a sample.
@@ -42,7 +73,7 @@ class CIFARTestDataset(Dataset):
         else:
             # Otherwise assume it's flat and reshape.
             pil_img = Image.fromarray(img.reshape(3, 32, 32).transpose(1, 2, 0).astype('uint8'))
-        
+
         if self.transform:
             pil_img = self.transform(pil_img)
         return pil_img, index
@@ -51,7 +82,7 @@ class CIFARTestDataset(Dataset):
 class CIFAR10DataModule:
     """
     Data module for CIFAR10 and competition test data.
-    
+
     Args:
         data_dir (str): Directory to store data.
         competition_name (str): Name of the Kaggle competition.
@@ -59,7 +90,7 @@ class CIFAR10DataModule:
         test_batch_size (int): Testing batch size.
         num_workers (int): Number of workers for data loading.
     """
-    def __init__(self, data_dir="./data", competition_name="deep-learning-spring-2025-project-1",
+    def __init__(self, transform_train, transform_test, data_dir="./data", competition_name="deep-learning-spring-2025-project-1",
                 batch_size=128, test_batch_size=100, num_workers=2):
         self.data_dir = data_dir
         self.competition_name = competition_name
@@ -73,16 +104,8 @@ class CIFAR10DataModule:
         self.test_pkl = os.path.join(self.competition_path, "cifar_test_nolabel.pkl")
 
         # Standard transforms for CIFAR10
-        self.transform_train = transforms.Compose([
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ])
-        self.transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
-        ])
+        self.transform_train = transform_train
+        self.transform_test = transform_test
 
     def get_train_loader(self):
         train_dataset = datasets.CIFAR10(
@@ -154,25 +177,25 @@ def display_all_data(train_loader, test_loader, competition_loader):
 def generate_submission(model, test_loader, filename_suffix="", device=None):
     """
     Generates a submission CSV file from predictions on the competition test dataset.
-    
+
     Parameters:
         model: The trained PyTorch model.
         test_loader: DataLoader for the competition test dataset.
         filename_suffix (str): Optional suffix to add to the filename.
         device: Torch device to use (defaults to CUDA if available).
-    
+
     Returns:
         submission (pd.DataFrame): DataFrame containing "ID" and "Labels".
     """
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     model.to(device)
     model.eval()
 
     all_ids = []
     all_preds = []
-    
+
     with torch.no_grad():
         for images, indices in test_loader:
             images = images.to(device)
@@ -180,18 +203,18 @@ def generate_submission(model, test_loader, filename_suffix="", device=None):
             preds = outputs.argmax(dim=1)  # Get predicted labels (0-9)
             all_ids.extend(indices.tolist())
             all_preds.extend(preds.cpu().tolist())
-    
+
     submission = pd.DataFrame({"ID": all_ids, "Labels": all_preds})
     filename = f"submission-{filename_suffix}.csv" if filename_suffix else "submission.csv"
     submission.to_csv(filename, index=False)
-    
+
     print(f"Submission file saved as {filename}")
     return submission
 
 def plot_random_competition_predictions(model, competition_test_loader, num_images=3):
     """
     Plots a random selection of images from the competition test dataset along with their predicted labels.
-    
+
     Parameters:
         model: A trained PyTorch model.
         competition_test_loader: A DataLoader for the competition test dataset.
@@ -201,30 +224,30 @@ def plot_random_competition_predictions(model, competition_test_loader, num_imag
     device = torch.device("cuda") if torch.cuda.is_available() else torch.device("cpu")
     model.to(device)
     model.eval()
-    
+
     # Get one batch from the competition test loader
     images, _ = next(iter(competition_test_loader))
     images = images.to(device)
-    
+
     # Predict labels using the model
     with torch.no_grad():
         outputs = model(images)
         preds = outputs.argmax(dim=1)  # Get integer labels 0-9
-    
+
     # Define a function to unnormalize images
     def unnormalize(img_tensor):
         mean = torch.tensor([0.4914, 0.4822, 0.4465]).view(3, 1, 1)
         std = torch.tensor([0.2023, 0.1994, 0.2010]).view(3, 1, 1)
         return img_tensor * std + mean
-    
+
     # Unnormalize and convert images to numpy format for plotting
     images_disp = unnormalize(images.cpu())
     images_np = images_disp.numpy().transpose(0, 2, 3, 1)
-    
+
     # Randomly select indices from the batch
     perm = torch.randperm(images.size(0))
     selected = perm[:num_images]
-    
+
     # Plot the selected images with their predicted labels
     plt.figure(figsize=(12, 4))
     for i, idx in enumerate(selected):
@@ -234,20 +257,3 @@ def plot_random_competition_predictions(model, competition_test_loader, num_imag
         plt.axis("off")
     plt.tight_layout()
     plt.show()
-
-# Example usage:
-# submission_df = generate_submission(model, competition_test_loader, filename_suffix="final_accuracy")
-
-# data_module = CIFAR10DataModule(
-#     data_dir="./data",
-#     competition_name="deep-learning-spring-2025-project-1",
-#     batch_size=128,
-#     test_batch_size=128,
-#     num_workers=2
-# )
-
-# train_loader = data_module.get_train_loader()
-# test_loader = data_module.get_standard_test_loader()
-# competition_test_loader = data_module.get_competition_test_loader()
-# display_all_data(train_loader, test_loader, competition_test_loader)
-# submission_df = generate_submission(model, competition_test_loader, filename_suffix="final_accuracy")
