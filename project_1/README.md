@@ -4,6 +4,7 @@
 - Trains a ResNet variant with Squeeze-and-Excitation blocks on CIFAR-10.
 - Uses advanced augmentations (MixUp, CutMix) and SWA for improved generalization.
 - Integrates Kaggle API for downloading competition data and generating submission files.
+- All models are saved with a timestamp and accuracy for reproducibility and can be found here: [Models](https://www.kaggle.com/hurryingauto3/models).
 
 ## Features
 - **Data Module:** Custom DataLoader for standard, training, and competition test sets.

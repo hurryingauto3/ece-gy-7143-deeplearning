@@ -138,7 +138,7 @@ From the original ResNet-18 architecture described in \cite{he2015deep}, we made
     
     \begin{figure}[ht]
     \centering
-         \includegraphics[width=0.7\linewidth]{traintest_lost-88.25.png}
+         \includegraphics[width=0.7\linewidth]{images/traintest_lost-88.25.png}
     \caption{Train/test loss over 35 epochs (Model 1).}
     \label{fig:training_performance_8825}
     \end{figure}
@@ -155,7 +155,7 @@ From the original ResNet-18 architecture described in \cite{he2015deep}, we made
     
     \begin{figure}[ht]
     \centering
-         \includegraphics[scale=0.3]{train_test_loss_94.62.png}
+         \includegraphics[scale=0.3]{images/train_test_loss_94.62.png}
     \caption{Train/test loss over 80 epochs (Model 9).}
     \label{fig:training_performance_9462}
     \end{figure}
@@ -164,7 +164,7 @@ From the original ResNet-18 architecture described in \cite{he2015deep}, we made
     
     \begin{figure}[h]
     \centering
-        \includegraphics[width=0.9\linewidth]{train_test_loss_95.31.png}
+        \includegraphics[width=0.9\linewidth]{images/train_test_loss_95.31.png}
     \caption{Train/test loss over 150 epochs (Model 10).}
     \label{fig:training_performance}
     \end{figure}
@@ -176,7 +176,7 @@ This evolution demonstrates how systematic modifications to architecture, regula
 
 \begin{figure}[ht]
 \centering
-\includegraphics[width=0.8\linewidth]{accuracy_charts.png}
+\includegraphics[width=0.8\linewidth]{images/accuracy_charts.png}
 \caption{Training performance over successive model iterations showing progressive improvements in accuracy and kaggle score.}
 \label{fig:all_iterations}
 \end{figure}
@@ -201,7 +201,7 @@ These analyses confirm that each component—when applied individually or in com
 To further assess class-level performance, we visualize the confusion matrix in Figure~\ref{fig:conf_matrix}. The strong diagonal dominance indicates the model accurately classifies most examples within each class. However, certain classes (e.g., \emph{cat} and \emph{dog}) exhibit minor confusion, reflecting their visual similarity at low resolution. Understanding these misclassifications can guide targeted augmentations or specialized fine-tuning strategies for even better results.
 \begin{figure}[ht]
     \centering
-    \includegraphics[width=0.8\linewidth]{conf_matrix.png}
+    \includegraphics[width=0.8\linewidth]{images/conf_matrix.png}
     \caption{Confusion matrix for the final model on the CIFAR-10 test set. Diagonal dominance shows robust class performance, with minor off-diagonal entries indicating occasional misclassifications.}
     \label{fig:conf_matrix}
 \end{figure}
