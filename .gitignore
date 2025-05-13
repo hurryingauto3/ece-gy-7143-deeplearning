@@ -97,3 +97,5 @@ coverage.xml
 .pytest_cache/
 cover/
 data/
+project_3/deeplearning-project-3.ipynb
+project_3/project_3.py

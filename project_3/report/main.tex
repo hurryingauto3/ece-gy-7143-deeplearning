@@ -58,33 +58,44 @@ Mathematically, adversarial attacks aim to find a perturbed image $\mathbf{x}\_{
 
 Our project pipeline involves loading the dataset and pre-trained models, implementing adversarial attack algorithms, generating adversarial datasets, evaluating model performance on these datasets, and analyzing the results.
 
-\subsection{Dataset and Model Loading (Task 1)}
-We used a subset of the ImageNet-1K dataset provided for the project, containing 500 images from 100 classes. Images were preprocessed using standard ImageNet normalization (mean\_norms, std\_norms) after conversion to tensors.
-The target model for crafting attacks was a pre-trained ResNet-34 available via torchvision.models.resnet34(weights='IMAGENET1K\_V1'). For transferability analysis, we used a pre-trained DenseNet-121 (torchvision.models.densenet121(weights='IMAGENET1K\_V1')). Both models were set to evaluation mode (.eval()).
+\subsection{Task 1: Basics}
+We used a subset of ImageNet-1K with 500 images from 100 classes. Images were normalized using standard ImageNet mean and standard deviation after converting to tensors. The target model for attacks was a pre-trained ResNet-34 from torchvision, and DenseNet-121 was used for transferability analysis. Both models were set to evaluation mode.
 
 We mapped the dataset's folder-based class indices to the full ImageNet-1K indices using a generated JSON file based on the provided labels\_list.json.
 
-\subsection{Baseline Evaluation (Task 1)}
+\subsubsection{Baseline Evaluation}
 We first evaluated the clean, preprocessed test dataset on the ResNet-34 model to establish a baseline performance. We computed and reported Top-1 and Top-5 accuracies.
 
-\subsection{Adversarial Attack Implementation}
+\subsubsection{Adversarial Attack Implementation}
 We implemented several adversarial attack techniques, focusing on untargeted attacks aiming to maximize the loss for the true class.
 
-\subsubsection{Fast Gradient Sign Method (FGSM) (Task 2)}
+\subsection{Task 2: Fast Gradient Sign Method (FGSM)}
 FGSM is a simple one-step $L_\infty$ attack defined by $\mathbf{x}\_{adv} = \mathbf{x} + \epsilon \cdot \text{sign}(\nabla\_{\mathbf{x}} L(\theta, \mathbf{x}, y))$, where $L$ is the loss function (Cross-Entropy), $\theta$ are model parameters, $\mathbf{x}$ is the input, $y$ is the true label, and $\epsilon$ is the perturbation budget. The gradient is computed with respect to the input image, not the model weights. We implemented FGSM for an $L_\infty$ budget of $\epsilon = 0.02$.
 
-\subsubsection{Projected Gradient Descent (PGD) (Task 3 - Pixel-wise)}
-PGD is an iterative $L_\infty$ attack often considered stronger than FGSM. It performs multiple gradient ascent steps, projecting the perturbation back onto the $\epsilon$-ball around the original image after each step. The update rule is $\mathbf{x}_{t+1} = \text{clip}(\mathbf{x}_t + \alpha \cdot \text{sign}(\nabla_{\mathbf{x}} L(\theta, \mathbf{x}_t, y)), \mathbf{x} - \epsilon, \mathbf{x} + \epsilon)$, where $\alpha$ is the step size and clip ensures the $L_\infty$ constraint is met. We implemented an untargeted PGD attack. For Task 3, we used PGD with $\epsilon=0.02$ and explored different step sizes and numbers of steps (e.g., 200 steps with step size 0.001) to try and improve upon FGSM.
+The implemented FGSM attack with $\epsilon=0.02$ achieved significant degradation, reducing ResNet-34 Top-1 accuracy from 76.00\% (baseline) down to approximately 6.00\%, achieving a relative accuracy drop of over 92\%.
 
-\subsubsection{Patch Attack (L0 PGD) (Task 4)}
-Patch attacks perturb only a small, localized region (a "patch") of the image, corresponding to an $L_0$ constraint on the perturbation mask. Within the patch, the perturbation magnitude can be large ($L_\infty$). We implemented a PGD-based patch attack. Key design choices explored via an ablation study included:
+\subsection{Task 3: Improved $L_\infty$ Attack (PGD)}
+Projected Gradient Descent (PGD) iteratively applies FGSM steps to create stronger adversarial examples by repeatedly projecting perturbations onto the allowable $\epsilon$-bounded region. Formally, the PGD iteration step is defined as:
+\[
+\mathbf{x}_{t+1} = \text{clip}\left(\mathbf{x}_t + \alpha \cdot \text{sign}\left(\nabla_{\mathbf{x}_t} L(\theta, \mathbf{x}_t, y)\right), \mathbf{x}-\epsilon, \mathbf{x}+\epsilon\right)
+\]
+
+We implemented untargeted PGD with random initialization, using a perturbation budget $\epsilon=0.02$, a total of 10 optimization steps, and a step size $\alpha=0.002$. This attack successfully reduced the ResNet-34 Top-1 accuracy from 76.00\% (baseline) to 57.40\%, a relative accuracy drop of 24.47\%. Interestingly, this configuration was less effective than the single-step FGSM attack, indicating potential areas for future optimization of step size or iteration count. Visual examples illustrating perturbations and prediction changes are provided in the Appendix (see Figure X).
+
+
+\subsection{Task 4: Patch Attack (L0 PGD)}
+After extensive ablation studies, the best-performing patch attack configuration included:
 \begin{itemize}
-    \item \textbf{Patch Location}: Randomly selected or saliency-based (picking the $32 \times 32$ window with the largest sum of absolute input gradients). Saliency location was implemented by computing gradients of the loss w.r.t the input and finding the patch with the maximum $L_1$ norm of the gradient.
-    \item \textbf{Targeting}: Untargeted (maximize loss for true class) or Targeted (minimize loss for the least-likely class predicted by the model).
-    \item \textbf{Optimization}: Number of steps, step size, and use of momentum (Adam-style first-order momentum \cite{dong2018boosting}).
-    \item \textbf{Perturbation Budget ($\epsilon$)}: The maximum $L_\infty$ change allowed *within the patch*. We explored values up to 0.50 as permitted by the project guidelines.
+    \item \textbf{Patch Size}: $32 \times 32$ pixels
+    \item \textbf{Perturbation Budget}: $\epsilon=0.50$ (within the patch)
+    \item \textbf{Optimization Steps}: 60 iterations with step size $\frac{\epsilon}{60}$
+    \item \textbf{Patch Location}: Saliency-based (highest summed absolute gradient)
+    \item \textbf{Targeting}: Least-likely class targeting (targeted attack)
+    \item \textbf{Momentum Optimization}: Enabled with $\beta=0.9$
 \end{itemize}
-Each variant was implemented within a flexible patch\_attack\_flex function allowing these choices via parameters.
+
+This optimized patch attack significantly reduced ResNet-34 Top-1 accuracy from 76.00\% to approximately 11.60\%, a relative drop of approximately 84.74\%.
+
 
 \subsection{Adversarial Dataset Generation and Evaluation}
 A critical lesson learned during implementation was the detrimental effect of saving adversarial examples using standard image formats (like PNG or JPEG) that employ 8-bit integer quantization. The subtle float-point perturbations generated by attacks like FGSM and PGD were mostly lost when converting back to integer pixels, significantly weakening the attack upon reloading.
@@ -96,8 +107,28 @@ For each implemented attack method (FGSM, PGD, and the best-performing patch att
 \subsection{Patch Attack Ablation Study (Task 4)}
 To determine the most effective patch attack configuration, we performed an ablation study. Starting from a baseline (10 steps, random patch, untargeted, $\epsilon=0.5$, no momentum), we incrementally added or changed one factor (e.g., increase steps, add saliency, add targeting, add momentum) for different variants. For each variant, we generated the adversarial dataset (saving as .pt files) and evaluated ResNet-34 accuracy. This allowed us to quantify the marginal impact of each design choice.
 
-\subsection{Transferability Analysis (Task 5)}
-To assess transferability, we evaluated the DenseNet-121 model on the original clean dataset and on the three adversarial datasets generated for ResNet-34 (FGSM $\epsilon=0.02$, PGD $\epsilon=0.02$, and the Best Patch $\epsilon=0.50$). We compared the Top-1 and Top-5 accuracies across models and datasets to understand how attacks crafted specifically for ResNet-34 affected the DenseNet-121.
+\subsection{Task 5: Transferability Analysis }
+To investigate the generalizability of adversarial examples, we evaluated the transferability of attacks crafted against ResNet-34 to DenseNet-121. Table~\ref{tab:transferability_results} summarizes the accuracies:
+
+\begin{table}[h!]
+\centering
+\caption{Transferability Results (crafted on ResNet-34)}
+\label{tab:transferability_results}
+\resizebox{\columnwidth}{!}{%
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Attack & $\epsilon$ & ResNet-34 Top-1 & DenseNet-121 Top-1 & $\Delta$Top-1\\
+\midrule
+Clean Baseline & - & 76.00\% & 74.20\% & -\\
+FGSM & 0.02 & 6.00\% & 33.00\% & 27.00 pp\\
+PGD & 0.02 & 57.40\% & 71.40\% & 14.00 pp\\
+Patch Attack & 0.50 & 11.60\% & 31.20\% & 19.60 pp\\
+\bottomrule
+\end{tabular}}
+\end{table}
+
+These results indicate that FGSM adversarial examples transferred most effectively, significantly impacting DenseNet-121. The targeted patch attack also demonstrated strong transferability, while PGD was notably less transferable under the parameters tested.
+
 
 \section{Results}
 We present the baseline performance of ResNet-34 and DenseNet-121 on the clean test set, followed by their performance on the adversarial datasets.
@@ -187,16 +218,18 @@ Adv3 (Best Patch)       & ResNet-34  & 0.50       & 11.60      & 31.20      & +1
 \textbf{TODO: Discuss timings:} Briefly mention computation time for generating datasets if available.
 
 \section{Discussion}
-The results clearly demonstrate the vulnerability of these deep models to adversarial attacks. The FGSM attack at $\epsilon=0.02$ on ResNet-34 was remarkably effective, reducing Top-1 accuracy to 6.00\%. This unexpectedly strong performance for a single-step attack at a small epsilon highlights the extreme brittleness of the target model to $L_\infty$ perturbations. The PGD attack at the same $\epsilon$ did not degrade performance as much (57.40\%), suggesting that for this specific epsilon and step size configuration, the multi-step process was not superior to FGSM's single large step. Tuning PGD parameters (more steps, different step sizes) would likely be necessary to unlock its full potential at this epsilon.
 
-The patch attack ablation study revealed several key factors for maximizing attack effectiveness within a limited pixel budget. Increasing the number of optimization steps and strategically placing the patch based on input gradients (\emph{saliency}) were significant contributors to reducing accuracy. Switching to a targeted attack and incorporating momentum provided further improvements, ultimately yielding the "Best Patch" variant with only 11.60\% Top-1 accuracy on ResNet-34. This validates common practices in adversarial patch generation \cite{brown2017adversarial, zoph2019learning}.
+Our experiments highlight significant vulnerabilities in deep neural networks against adversarial attacks. Notably, the single-step FGSM attack ($\epsilon=0.02$) drastically reduced ResNet-34 Top-1 accuracy from 76.00\% to 6.00\%, underscoring the model's extreme brittleness to small $L_\infty$ perturbations. Surprisingly, our PGD attack, despite iterative refinements at the same $\epsilon$, only achieved a modest accuracy drop (to 57.40\%). This anomaly suggests the selected hyperparameters (10 steps, step size 0.002) may have limited PGD's effectiveness; additional tuning (e.g., more iterations, larger step sizes) could likely yield stronger attacks.
 
-The transferability results show that attacks crafted on ResNet-34 retain some, but not all, of their effectiveness when transferred to DenseNet-121. The FGSM attack, while devastating to ResNet-34 (6.00\%), caused a noticeable but less severe drop on DenseNet-121 (33.00\%). Similarly, the Best Patch attack significantly harmed DenseNet-121 (31.20\%), although its relative performance degradation was larger on the model it was crafted for (ResNet-34). The PGD attack at $\epsilon=0.02$ showed the least transferability, likely because it was already less effective on the source model. This suggests that adversarial examples are somewhat model-specific, although stronger attacks tend to transfer better. Potential mitigation strategies against such attacks include adversarial training, using robust architectures, or ensemble defenses.
+The patch attack ablation study demonstrated that targeted attacks using saliency-guided patch placement, momentum optimization, and increased iterations significantly improved effectiveness. The best configuration reduced ResNet-34's accuracy to 11.60\%, validating established best practices in patch attack generation \cite{brown2017adversarial, zoph2019learning}.
 
-A crucial lesson learned during this project was the impact of data format on the survival of perturbations. Saving adversarial images as standard 8-bit quantized images effectively erased the subtle changes, rendering the attacks impotent upon reloading. Using a lossless format like PyTorch's .pt files for saving and loading the perturbed tensors was essential for accurate evaluation of the attacks.
+Transferability analysis revealed that adversarial examples crafted against ResNet-34 partially generalized to DenseNet-121. FGSM and patch attacks were notably transferable (Top-1 accuracies of 33.00\% and 31.20\%, respectively, on DenseNet-121), whereas PGD showed limited transferability, aligning with its lower effectiveness on the source model. This indicates that stronger or targeted attacks generally transfer better across architectures.
+
+Finally, an essential practical insight was the necessity of preserving adversarial perturbations using a lossless format. Saving perturbed images as PyTorch tensors (.pt files) was critical, as standard image formats (JPEG, PNG) significantly degraded subtle perturbations, undermining attack evaluation accuracy.
 
 \section{Conclusion}
-We successfully implemented and evaluated $L_\infty$ (FGSM, PGD) and $L_0$ patch attacks against a pre-trained ResNet-34 model on ImageNet-1K. We demonstrated that small perturbations can severely impact model accuracy, with FGSM causing a large drop at $\epsilon=0.02$ and a carefully tuned patch attack reducing Top-1 accuracy below 12\%. An ablation study highlighted the importance of iteration, patch placement, targeting, and momentum for patch attack effectiveness. We also showed that attacks crafted on ResNet-34 exhibit partial transferability to DenseNet-121, confirming that these vulnerabilities are not entirely model-specific. Future work could explore more advanced attacks like Carlini \& Wagner (C\&W) or AutoAttack, investigate defense mechanisms, or study targeted patch attacks more thoroughly.
+We successfully implemented and evaluated several adversarial attacks against a pre-trained ResNet-34 classifier, demonstrating its vulnerability to carefully crafted perturbations. FGSM ($L_\infty$, $\epsilon=0.02$) significantly reduced Top-1 accuracy from 76.00\% to 6.00\%, while our optimized patch attack ($L_0$, $\epsilon=0.50$ within a $32\times32$ region) reduced accuracy to 11.60\%. Ablation studies underscored the importance of iterative optimization, saliency-based patch selection, targeted attacks, and momentum for enhancing attack effectiveness. Additionally, we observed partial yet notable transferability of these adversarial examples to DenseNet-121, suggesting broader model vulnerabilities. Future work should investigate stronger attacks (e.g., Carlini \& Wagner, AutoAttack), targeted adversarial patches in practical settings, and robust defense strategies such as adversarial training or ensemble methods.
+
 
 \section*{Appendix}
 \label{sec:appendix}
